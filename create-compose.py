@@ -1,3 +1,4 @@
+import csv
 import random, plistlib, shutil, os
 
 base_port = 8080
@@ -7,12 +8,12 @@ def generate_docker_compose(students):
     services = []
     for student in students:
         services.append(f"""
-  {str(student['name']).lower()}:
+  {str(student['name'])}:
     build: .
     ports: 
       - "{student['port']}:{base_port}"
     volumes:
-      - ./projects/{str(student['name']).lower()}:/home/coder/project/
+      - ./projects/{str(student['name'])}:/home/coder/project/
     environment:
       EXTENSIONS_GALLERY: "null"
       PASSWORD: "{student['password']}"
@@ -29,7 +30,7 @@ def generate_seb_files(students):
         new_url = f"http://{base_domain}:{student['port']}"
         config["startURL"] = new_url
 
-        with open(f"./SEBFiles/{student['name'].lower()}.seb", "wb") as f:
+        with open(f"./SEBFiles/{student['name']}.seb", "wb") as f:
             plistlib.dump(config, f)
 
 def main():
@@ -38,15 +39,17 @@ def main():
     os.makedirs("./SEBFiles", exist_ok=True)
     os.makedirs("./projects", exist_ok=True)
 
-    number_of_students = int(input("Inserire il numero di studenti che faranno il test: "))
-
     students = []
 
-    for i in range(number_of_students):
-        name = input(f"Inserire il nome dello studente {i + 1}: ")
-        password = f"{random.randint(0, 999999):06d}"
-        port = base_port + i
-        students.append({"name": name, "password": password, "port": port})
+    with open("Students.csv", newline='', encoding="utf-8") as csvfile:
+        for i, row in enumerate(csv.DictReader(csvfile)):
+            classe = str(row.get("classe", ""))
+            nome = str(row.get("nome", "")).capitalize()
+            cognome = str(row.get("cognome", "")).capitalize()
+            username = classe + "_" + nome + cognome
+            password = f"{random.randint(0, 999999):06d}"
+            port = base_port + i
+            students.append({"name": username, "password": password, "port": port})
 
     docker_compose = generate_docker_compose(students)
     
@@ -65,3 +68,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+### TODO
+# usare flask per fare interfaccia web
+# implementare csv per inserimento allievi - FATTO
+# inviare .seb via main
+# Implementare OTP (tirar giu il container quando si esce)
