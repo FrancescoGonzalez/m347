@@ -1,6 +1,6 @@
 services:
 
-  i3a_FrancescoGonzalez:
+  i3a_FrancescoGonzalez: 
     build: .
     ports: 
       - "8080:8080"
