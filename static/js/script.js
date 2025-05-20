@@ -309,17 +309,163 @@ document.addEventListener('DOMContentLoaded', function() {
         refreshStudentList();
     });
     
-    // Configura correttamente i pulsanti di setup in base allo stato
-    if (typeof setup_running !== 'undefined') {
-        document.getElementById('start-setup').disabled = setup_running;
-        document.getElementById('end-setup').disabled = !setup_running;
+    // Verifica lo stato iniziale del setup
+    checkSetupStatus();
+    
+    // Configura i toggle button per il setup
+    configureSetupButtons();
+});
+
+// Aggiungi questa nuova funzione per configurare i pulsanti
+// Aggiungi questa nuova funzione per configurare i pulsanti
+function configureSetupButtons() {
+    const startSetupBtn = document.getElementById('start-setup');
+    const endSetupBtn = document.getElementById('end-setup');
+    
+    // Inizialmente nascondiamo entrambi i pulsanti fino a quando non verifichiamo lo stato
+    startSetupBtn.style.display = 'none';
+    endSetupBtn.style.display = 'none';
+    
+    // Verifica immediatamente lo stato dei container per determinare quale pulsante mostrare
+    fetch('/status')
+        .then(response => response.json())
+        .then(containers => {
+            let anyContainerActive = false;
+            
+            // Verifica se c'è almeno un container attivo
+            for (const studentName in containers) {
+                if (containers[studentName] === "attivo") {
+                    anyContainerActive = true;
+                    break;
+                }
+            }
+            
+            if (anyContainerActive) {
+                // Se ci sono container attivi, mostra il pulsante per terminare
+                startSetupBtn.style.display = 'none';
+                endSetupBtn.style.display = 'inline-block';
+                document.getElementById('setup-status').textContent = 'Docker attivo. Puoi terminare il setup.';
+            } else {
+                // Altrimenti mostra il pulsante per avviare
+                startSetupBtn.style.display = 'inline-block';
+                endSetupBtn.style.display = 'none';
+                document.getElementById('setup-status').textContent = 'Docker non attivo. Puoi avviare il setup.';
+            }
+        })
+        .catch(error => {
+            console.error('Errore nel controllo dei container:', error);
+            document.getElementById('setup-status').textContent = 'Errore nel controllo dello stato di Docker.';
+            // In caso di errore, mostriamo il pulsante di avvio per sicurezza
+            startSetupBtn.style.display = 'inline-block';
+            endSetupBtn.style.display = 'none';
+        });
+    
+    // Modifica l'event listener per "Avvia setup"
+    startSetupBtn.addEventListener('click', function() {
+        document.getElementById('setup-status').textContent = 'Setup in esecuzione...';
+        // Nascondi il pulsante "Avvia" e mostra "Termina"
+        startSetupBtn.style.display = 'none';
+        endSetupBtn.style.display = 'inline-block';
         
-        if (setup_running) {
-            document.getElementById('setup-status').textContent = 'Setup in esecuzione...';
+        fetch('/start', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
             // Inizia a controllare lo stato del setup
             checkSetupStatus();
-        } else if (setup_complete) {
-            document.getElementById('setup-status').textContent = 'Setup completato con successo.';
-        }
-    }
-});
+        })
+        .catch(error => {
+            console.error('Errore nell\'avvio del setup:', error);
+            document.getElementById('setup-status').textContent = 'Errore nell\'avvio del setup.';
+            // In caso di errore, ripristina i pulsanti
+            startSetupBtn.style.display = 'inline-block';
+            endSetupBtn.style.display = 'none';
+        });
+    });
+
+    // Modifica l'event listener per "Termina setup"
+    endSetupBtn.addEventListener('click', function() {
+        fetch('/end_setup', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+            document.getElementById('setup-status').textContent = 'Setup terminato manualmente.';
+            // Nascondi il pulsante "Termina" e mostra "Avvia"
+            startSetupBtn.style.display = 'inline-block';
+            endSetupBtn.style.display = 'none';
+            refreshStudentList();
+        })
+        .catch(error => {
+            console.error('Errore nella terminazione del setup:', error);
+            document.getElementById('setup-status').textContent = 'Errore nella terminazione del setup.';
+        });
+    });
+}
+
+// Modifica la funzione che controlla lo stato del setup
+function checkSetupStatus() {
+    fetch('/setup_status')
+        .then(response => response.json())
+        .then(data => {
+            const startSetupBtn = document.getElementById('start-setup');
+            const endSetupBtn = document.getElementById('end-setup');
+            
+            if (data.running) {
+                document.getElementById('setup-status').textContent = 'Setup in esecuzione...';
+                // Mostra solo il pulsante per terminare
+                startSetupBtn.style.display = 'none';
+                endSetupBtn.style.display = 'inline-block';
+                
+                // Controlla di nuovo dopo un intervallo
+                setTimeout(checkSetupStatus, 2000);
+            } else {
+                if (data.complete) {
+                    document.getElementById('setup-status').textContent = 'Setup completato con successo.';
+                } else {
+                    // Verifichiamo se ci sono container attivi per determinare quale pulsante mostrare
+                    fetch('/status')
+                        .then(response => response.json())
+                        .then(containers => {
+                            let anyContainerActive = false;
+                            
+                            // Verifica se c'è almeno un container attivo
+                            for (const studentName in containers) {
+                                if (containers[studentName] === "attivo") {
+                                    anyContainerActive = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (anyContainerActive) {
+                                // Se ci sono container attivi, mostra il pulsante per terminare
+                                startSetupBtn.style.display = 'none';
+                                endSetupBtn.style.display = 'inline-block';
+                                document.getElementById('setup-status').textContent = 'Docker attivo. Puoi terminare il setup.';
+                            } else {
+                                // Altrimenti mostra il pulsante per avviare
+                                startSetupBtn.style.display = 'inline-block';
+                                endSetupBtn.style.display = 'none';
+                                document.getElementById('setup-status').textContent = 'Docker non attivo. Puoi avviare il setup.';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Errore nel controllo dei container:', error);
+                            document.getElementById('setup-status').textContent = 'Errore nel controllo dello stato di Docker.';
+                            startSetupBtn.style.display = 'inline-block';
+                            endSetupBtn.style.display = 'none';
+                        });
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Errore nel controllo dello stato del setup:', error);
+            document.getElementById('setup-status').textContent = 'Errore nel controllo dello stato.';
+            // In caso di errore, mostriamo il pulsante di avvio per sicurezza
+            document.getElementById('start-setup').style.display = 'inline-block';
+            document.getElementById('end-setup').style.display = 'none';
+        });
+}
