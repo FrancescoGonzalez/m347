@@ -6,14 +6,11 @@ import threading
 import re
 import time
 import smtplib
+import json
 
-base_port = 8080
-base_domain = "localhost"
-admin_email = "francibgonza21@gmail.com"
-emergency_user = True
-
-sender_mail = "CPLocarnoJavaBot@gmail.com"
-sender_pwd = "dmdc opoo ltem qzga"
+with open("config.json", "r") as f:
+    config = json.load(f)
+    print(config)
 
 def send_mail(student):
     email_body = f"""\
@@ -35,7 +32,7 @@ def send_mail(student):
     msg = EmailMessage()
     msg.set_content(email_body)
     msg['Subject'] = f'Java enviroment for test - {student['name']} {student['surname']}'
-    msg['From'] = admin_email
+    msg['From'] = config["admin_email"]
     msg['To'] = student['email']
 
     with open(f"./SEBFiles/{student['username']}.seb", "rb") as f:
@@ -46,8 +43,8 @@ def send_mail(student):
     s = smtplib.SMTP('smtp.gmail.com', 587)
     s.ehlo()
     s.starttls()
-    s.login(sender_mail, sender_pwd)
-    s.sendmail(admin_email, [student['email']], msg.as_string())
+    s.login(config["sender_mail"], config["sender_app_pwd"])
+    s.sendmail(config["sender_mail"], [student['email']], msg.as_string())
     s.quit()
 
 def generate_docker_compose(students):
@@ -57,7 +54,7 @@ def generate_docker_compose(students):
   {str(student['username']).lower()}:
     build: .
     ports: 
-      - "{student['port']}:{base_port}"
+      - "{student['port']}:{config["base_port"]}"
     volumes:
       - ./projects/{str(student['username'])}:/home/coder/project/
     environment:
@@ -71,10 +68,10 @@ def generate_seb_files(students):
         seb_template = plistlib.load(f)
 
     for student in students:
-        config = seb_template.copy()
+        seb_file = seb_template.copy()
 
-        new_url = f"http://{base_domain}:{student['port']}"
-        config["startURL"] = new_url
+        new_url = f"http://{config["base_domain"]}:{student['port']}"
+        seb_file["startURL"] = new_url
 
         with open(f"./SEBFiles/{student['username']}.seb", "wb") as f:
             plistlib.dump(config, f)
@@ -103,28 +100,28 @@ def monitor_logs_and_shutdown():
         time.sleep(5)
 
 def main():
-    shutil.rmtree("./projects")
-    shutil.rmtree("./SEBFiles")
-    os.makedirs("./SEBFiles", exist_ok=True)
-    os.makedirs("./projects", exist_ok=True)
+    shutil.rmtree(config["SEB_folder_name"])
+    shutil.rmtree(config["projects_folder_name"])
+    os.makedirs(config["SEB_folder_name"], exist_ok=True)
+    os.makedirs(config["projects_folder_name"], exist_ok=True)
 
     students = []
 
-    with open("Students.csv", newline='', encoding="utf-8") as csvfile:
+    with open(config["Students.csv_path"], newline='', encoding="utf-8") as csvfile:
         for i, row in enumerate(csv.DictReader(csvfile)):
             classe = str(row.get("class", ""))
             nome = str(row.get("name", "")).capitalize()
             cognome = str(row.get("surname", "")).capitalize()
             username = classe + "_" + nome + cognome
             password = f"{random.randint(0, 999999):06d}"
-            port = base_port + i
+            port = config["base_port"] + i
             students.append({"name": nome, "surname": cognome, "username": username, "password": password, "port": port, "email": str(row.get("email", ""))})
     
-    if (emergency_user): students.append({"name": "emergency", "surname": "user", "username": "emergency_user", "password": f"{random.randint(0, 999999):06d}", "port": "8079", "email": admin_email})
+    if (config["emergency_user"]): students.append({"name": "emergency", "surname": "user", "username": "emergency_user", "password": f"{random.randint(0, 999999):06d}", "port": "8079", "email": config["admin_email"]})
 
     docker_compose = generate_docker_compose(students)
     
-    with open("docker-compose.yaml", "w") as file:
+    with open(config["docker-compose_path"], "w") as file:
         file.write(docker_compose)
     
     print("File 'docker-compose.yaml' generato con successo!")
