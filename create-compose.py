@@ -1,14 +1,20 @@
 import csv
 import random, plistlib, shutil, os
+import subprocess
+import threading
+import re
+import time
 
 base_port = 8080
-base_domain = "172.20.10.4"
+base_domain = "localhost"
+admin_email = "francibgonza21@gmail.com"
+emergency_user = True
 
 def generate_docker_compose(students):
     services = []
     for student in students:
         services.append(f"""
-  {str(student['name'])}:
+  {str(student['name']).lower()}:
     build: .
     ports: 
       - "{student['port']}:{base_port}"
@@ -33,6 +39,29 @@ def generate_seb_files(students):
         with open(f"./SEBFiles/{student['name']}.seb", "wb") as f:
             plistlib.dump(config, f)
 
+def monitor_logs_and_shutdown():
+    pattern = re.compile(r"^([a-zA-Z0-9_\-]+)\s+\|\s+.*\[ManagementConnection\] The client has disconnected")
+    checked = set()
+    while True:
+        proc = subprocess.Popen(
+            ["docker-compose", "logs", "--tail=100"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+        for line in proc.stdout:
+            match = pattern.search(line)
+            if match:
+                container = match.group(1)
+                if container not in checked:
+                    print(f"Disconnessione rilevata per {container}, arresto container...")
+                    subprocess.run(["docker", "stop", f"progettofinale-{container}"])
+                    checked.add(container)
+        proc.stdout.close()
+        proc.wait()
+        time.sleep(5)
+
 def main():
     shutil.rmtree("./projects")
     shutil.rmtree("./SEBFiles")
@@ -49,7 +78,9 @@ def main():
             username = classe + "_" + nome + cognome
             password = f"{random.randint(0, 999999):06d}"
             port = base_port + i
-            students.append({"name": username, "password": password, "port": port})
+            students.append({"name": username, "password": password, "port": port, "email": str(row.get("email", ""))})
+    
+    if (emergency_user): students.append({"name": "emergency_user", "password": f"{random.randint(0, 999999):06d}", "port": "8079", "email": admin_email})
 
     docker_compose = generate_docker_compose(students)
     
@@ -64,7 +95,13 @@ def main():
 
     print(students)
 
-    print("Per avviare il tutto eseguire 'docker-compose up --build'")
+    # Avvia il thread che monitora i log
+    t = threading.Thread(target=monitor_logs_and_shutdown, daemon=True)
+    t.start()
+
+    # Avvia docker-compose up --build
+    print("Avvio dei container con 'docker-compose up --build'...")
+    subprocess.run(["docker-compose", "up", "--build"])
 
 if __name__ == "__main__":
     main()
@@ -72,6 +109,4 @@ if __name__ == "__main__":
 
 ### TODO
 # usare flask per fare interfaccia web
-# implementare csv per inserimento allievi - FATTO
-# inviare .seb via main
-# Implementare OTP (tirar giu il container quando si esce)
+# inviare .seb via mail
