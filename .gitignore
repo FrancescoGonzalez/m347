@@ -1,5 +1,5 @@
 SEBFiles/
 projects/
+__pycache__/
 docker-compose.yaml
-Students.csv
 .DS_Store

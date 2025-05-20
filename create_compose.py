@@ -64,7 +64,7 @@ def generate_docker_compose(students):
     return "services:\n" + "\n".join(services)
 
 def generate_seb_files(students):
-    with open("./SEBSettingsTemplate.seb", "rb") as f:
+    with open("./templates/SEBSettingsTemplate.seb", "rb") as f:
         seb_template = plistlib.load(f)
 
     for student in students:
@@ -74,7 +74,7 @@ def generate_seb_files(students):
         seb_file["startURL"] = new_url
 
         with open(f"./SEBFiles/{student['username']}.seb", "wb") as f:
-            plistlib.dump(config, f)
+            plistlib.dump(seb_file, f)
 
 def monitor_logs_and_shutdown():
     pattern = re.compile(r"^([a-zA-Z0-9_\-]+)\s+\|\s+.*\[ManagementConnection\] The client has disconnected")
@@ -143,8 +143,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-### TODO
-# usare flask per fare interfaccia web
-# inviare .seb via mail

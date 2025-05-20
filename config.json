@@ -3,7 +3,7 @@
   "sender_app_pwd": "dmdc opoo ltem qzga",
   "emergency_user": true,
   "admin_email": "francibgonza21@gmail.com",
-  "base_domain": "localhost",
+  "base_domain": "172.20.10.4",
   "base_port": 8080,
   "SEB_folder_name": "./SEBFiles",
   "projects_folder_name": "./projects",

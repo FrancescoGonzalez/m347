@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel Java Test</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Admin Panel Java Test</h1>
+  </header>
+  
+  <div class="main-container">
+    <!-- Pannello Studenti -->
+    <div class="students">
+      <div class="panel-header">
+        <span>Studenti</span>
+        <button id="refresh-students" class="btn btn-primary">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+      <ul class="student-list" id="student-list">
+        <!-- Lista studenti generata dinamicamente -->
+        <li class="no-content">Caricamento studenti...</li>
+      </ul>
+      
+      <!-- Pannello Setup -->
+      <div class="setup-panel">
+        <div class="panel-header">Setup Ambiente</div>
+        <div class="setup-actions">
+          <div id="setup-status" class="setup-status">Setup non in esecuzione.</div>
+          <div class="setup-buttons">
+            <button id="start-setup" class="btn btn-success">Avvia Setup</button>
+            <button id="end-setup" class="btn btn-warning" disabled>Termina Setup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Pannello File Explorer -->
+    <div class="files">
+      <div class="panel-header">
+        <span>File Explorer: <span id="current-student">Nessuno studente selezionato</span></span>
+      </div>
+      <ul class="file-list" id="file-list">
+        <!-- File generati dinamicamente -->
+        <li class="no-content">Seleziona uno studente per visualizzare i file</li>
+      </ul>
+    </div>
+    
+    <!-- Pannello Contenuto File -->
+    <div class="file-content">
+      <div class="content-header">
+        <span id="current-file">Nessun file selezionato</span>
+      </div>
+      <div class="content-body">
+        <pre id="file-content-display" class="no-content">Seleziona un file per visualizzarne il contenuto</pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script>
+  // Script di debug per aiutare a diagnosticare problemi
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('check-status').addEventListener('click', function() {
+      fetch('/status')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('debug-output').innerHTML = 
+            '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        })
+        .catch(error => {
+          document.getElementById('debug-output').innerHTML = 
+            '<pre>Error: ' + error.message + '</pre>';
+        });
+    });
+  });
+  </script>
+
+  <script>
+  // Passa le variabili Flask a JavaScript
+  var setup_running = {{ setup_running|tojson }};
+  var setup_complete = {{ setup_complete|tojson }};
+  var initialContainerStatuses = {{ container_statuses|tojson }};
+  </script>
+</body>
+</html>
