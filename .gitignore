@@ -1,4 +1,5 @@
 SEBFiles/
+projects/
 docker-compose.yaml
 Students.csv
 .DS_Store
