@@ -1,5 +1,3 @@
-## Per runnare il container, eseguire:
+## Per eseguire l'applicazione, runnare il file app.py
 
-```bash
-docker build -t seb_vscode . && docker run -p 8080:8080 -v ./project:/home/coder/project -v ./config:/home/coder/.config -e PASSWORD=12345 -e EXTENSIONS_GALLERY=null seb_vscode
-```
+In seguito nella porta 127.0.0.1 si aprirà un piccolo sito web dovedi possono gestire i containers.
