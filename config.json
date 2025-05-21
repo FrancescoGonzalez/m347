@@ -8,5 +8,6 @@
   "SEB_folder_name": "./SEBFiles",
   "projects_folder_name": "./projects",
   "Students.csv_path": "./Students.csv",
-  "docker-compose_path": "./docker-compose.yaml"
+  "docker-compose_path": "./docker-compose.yaml",
+  "docker_container_prefix": "progettofinale-"
 }

@@ -1,11 +1,9 @@
-// Variabili globali
 let currentStudent = null;
 let currentFile = null;
 let autoRefreshInterval = null;
 let autoRefreshEnabled = true;
-const REFRESH_INTERVAL = 5000; // 5 secondi
+const REFRESH_INTERVAL = 5000;
 
-// Aggiorna la lista degli studenti
 function refreshStudentList() {
     fetch('/status')
         .then(response => {
@@ -15,7 +13,7 @@ function refreshStudentList() {
             return response.json();
         })
         .then(data => {
-            console.log('Received student data:', data); // Per debugging
+            console.log('Received student data:', data);
             
             const studentList = document.getElementById('student-list');
             studentList.innerHTML = '';
@@ -25,23 +23,20 @@ function refreshStudentList() {
                 return;
             }
             
-            // Ordina gli studenti alfabeticamente
             const sortedStudents = Object.keys(data).sort();
             
             for (const student of sortedStudents) {
                 const status = data[student];
-                console.log(`Creating element for student ${student} with status ${status}`); // Per debugging
+                console.log(`Creating element for student ${student} with status ${status}`);
                 
                 const li = document.createElement('li');
                 li.className = `student-item status-${status}`;
                 li.dataset.student = student;
                 
-                // Rendi l'intero elemento li cliccabile
                 li.addEventListener('click', function() {
                     selectStudent(student);
                 });
                 
-                // Aggiungi l'indicatore di stato e il nome dello studente
                 const statusIcon = document.createElement('span');
                 statusIcon.className = 'status-indicator';
                 
@@ -49,13 +44,11 @@ function refreshStudentList() {
                 nameSpan.className = 'student-name';
                 nameSpan.textContent = student;
                 
-                // Costruisci l'elemento
                 li.appendChild(statusIcon);
                 li.appendChild(nameSpan);
                 studentList.appendChild(li);
             }
             
-            // Se l'utente aveva selezionato uno studente, mantieni la selezione
             if (currentStudent) {
                 const selectedItem = document.querySelector(`.student-item[data-student="${currentStudent}"]`);
                 if (selectedItem) {
@@ -70,11 +63,9 @@ function refreshStudentList() {
         });
 }
 
-// Seleziona uno studente e carica i suoi file
 function selectStudent(student) {
     currentStudent = student;
     
-    // Aggiorna la UI per mostrare lo studente selezionato
     document.querySelectorAll('.student-item').forEach(item => {
         item.classList.remove('selected');
     });
@@ -86,11 +77,9 @@ function selectStudent(student) {
     
     document.getElementById('current-student').textContent = student;
     
-    // Carica i file dello studente
     loadStudentFiles(student);
 }
 
-// Carica i file di uno studente
 function loadStudentFiles(student) {
     fetch(`/files/${student}`)
         .then(response => response.json())
@@ -123,11 +112,9 @@ function loadStudentFiles(student) {
         });
 }
 
-// Seleziona un file e mostra il suo contenuto
 function selectFile(filePath, fileName) {
     currentFile = filePath;
     
-    // Aggiorna la UI per mostrare il file selezionato
     document.querySelectorAll('.file-item').forEach(item => {
         item.classList.remove('selected');
     });
@@ -139,16 +126,13 @@ function selectFile(filePath, fileName) {
     
     document.getElementById('current-file').textContent = fileName || filePath.split('/').pop();
     
-    // Carica il contenuto del file
     loadFileContent(filePath);
     
-    // Imposta il refresh automatico per questo file solo se abilitato
     if (autoRefreshEnabled) {
         startAutoRefresh();
     }
 }
 
-// Carica il contenuto di un file
 function loadFileContent(filePath) {
     fetch(`/content/${filePath}`)
         .then(response => response.json())
@@ -170,12 +154,9 @@ function loadFileContent(filePath) {
         });
 }
 
-// Avvia il refresh automatico per il file corrente
 function startAutoRefresh() {
-    // Cancella qualsiasi intervallo precedente
     stopAutoRefresh();
     
-    // Imposta un nuovo intervallo solo se c'è un file selezionato
     if (currentFile) {
         autoRefreshInterval = setInterval(() => {
             loadFileContent(currentFile);
@@ -183,7 +164,6 @@ function startAutoRefresh() {
     }
 }
 
-// Ferma il refresh automatico
 function stopAutoRefresh() {
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
@@ -191,7 +171,6 @@ function stopAutoRefresh() {
     }
 }
 
-// Attiva/disattiva l'aggiornamento automatico
 function toggleAutoRefresh() {
     autoRefreshEnabled = !autoRefreshEnabled;
     
@@ -204,7 +183,6 @@ function toggleAutoRefresh() {
         toggleBtn.classList.add('btn-warning');
         statusSpan.textContent = 'Aggiornamento automatico attivo';
         
-        // Riavvia l'aggiornamento automatico se c'è un file selezionato
         if (currentFile) {
             startAutoRefresh();
         }
@@ -214,14 +192,11 @@ function toggleAutoRefresh() {
         toggleBtn.classList.add('btn-success');
         statusSpan.textContent = 'Aggiornamento automatico disattivato';
         
-        // Ferma l'aggiornamento automatico se è attivo
         stopAutoRefresh();
     }
 }
 
-// Sostituisci gli event listener per i pulsanti
 document.getElementById('start-setup').addEventListener('click', function() {
-    // Aggiorna lo stato del setup
     document.getElementById('setup-status').textContent = 'Setup in esecuzione...';
     this.disabled = true;
     document.getElementById('end-setup').disabled = false;
@@ -232,7 +207,6 @@ document.getElementById('start-setup').addEventListener('click', function() {
     .then(response => response.json())
     .then(data => {
         console.log(data.message);
-        // Inizia a controllare lo stato del setup
         checkSetupStatus();
     })
     .catch(error => {
@@ -260,7 +234,6 @@ document.getElementById('end-setup').addEventListener('click', function() {
     });
 });
 
-// Controlla lo stato del setup
 function checkSetupStatus() {
     fetch('/setup_status')
         .then(response => response.json())
@@ -268,7 +241,6 @@ function checkSetupStatus() {
             if (data.running) {
                 document.getElementById('setup-status').textContent = 'Setup in esecuzione...';
                 document.getElementById('end-setup').disabled = false;
-                // Controlla di nuovo dopo un intervallo
                 setTimeout(checkSetupStatus, 2000);
             } else {
                 if (data.complete) {
@@ -278,7 +250,6 @@ function checkSetupStatus() {
                 }
                 document.getElementById('start-setup').disabled = false;
                 document.getElementById('end-setup').disabled = true;
-                // Aggiorna la lista degli studenti
                 refreshStudentList();
             }
         })
@@ -290,49 +261,32 @@ function checkSetupStatus() {
         });
 }
 
-// Modifica la funzione di inizializzazione alla fine del file
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded');
     
-    // Abilita l'aggiornamento automatico all'avvio
     autoRefreshEnabled = true;
     
-    // Carica la lista degli studenti all'avvio
     refreshStudentList();
     
-    // Imposta l'aggiornamento periodico della lista degli studenti
-    setInterval(refreshStudentList, 5000); // Cambiato a 5 secondi per avere aggiornamenti più frequenti
+    setInterval(refreshStudentList, 5000);
     
-    // Aggiungi l'event listener per il refresh manuale
-    document.getElementById('refresh-students').addEventListener('click', function() {
-        console.log('Manual refresh triggered');
-        refreshStudentList();
-    });
-    
-    // Verifica lo stato iniziale del setup
     checkSetupStatus();
     
-    // Configura i toggle button per il setup
     configureSetupButtons();
 });
 
-// Aggiungi questa nuova funzione per configurare i pulsanti
-// Aggiungi questa nuova funzione per configurare i pulsanti
 function configureSetupButtons() {
     const startSetupBtn = document.getElementById('start-setup');
     const endSetupBtn = document.getElementById('end-setup');
     
-    // Inizialmente nascondiamo entrambi i pulsanti fino a quando non verifichiamo lo stato
     startSetupBtn.style.display = 'none';
     endSetupBtn.style.display = 'none';
     
-    // Verifica immediatamente lo stato dei container per determinare quale pulsante mostrare
     fetch('/status')
         .then(response => response.json())
         .then(containers => {
             let anyContainerActive = false;
             
-            // Verifica se c'è almeno un container attivo
             for (const studentName in containers) {
                 if (containers[studentName] === "attivo") {
                     anyContainerActive = true;
@@ -341,12 +295,10 @@ function configureSetupButtons() {
             }
             
             if (anyContainerActive) {
-                // Se ci sono container attivi, mostra il pulsante per terminare
                 startSetupBtn.style.display = 'none';
                 endSetupBtn.style.display = 'inline-block';
                 document.getElementById('setup-status').textContent = 'Docker attivo. Puoi terminare il setup.';
             } else {
-                // Altrimenti mostra il pulsante per avviare
                 startSetupBtn.style.display = 'inline-block';
                 endSetupBtn.style.display = 'none';
                 document.getElementById('setup-status').textContent = 'Docker non attivo. Puoi avviare il setup.';
@@ -355,15 +307,12 @@ function configureSetupButtons() {
         .catch(error => {
             console.error('Errore nel controllo dei container:', error);
             document.getElementById('setup-status').textContent = 'Errore nel controllo dello stato di Docker.';
-            // In caso di errore, mostriamo il pulsante di avvio per sicurezza
             startSetupBtn.style.display = 'inline-block';
             endSetupBtn.style.display = 'none';
         });
     
-    // Modifica l'event listener per "Avvia setup"
     startSetupBtn.addEventListener('click', function() {
         document.getElementById('setup-status').textContent = 'Setup in esecuzione...';
-        // Nascondi il pulsante "Avvia" e mostra "Termina"
         startSetupBtn.style.display = 'none';
         endSetupBtn.style.display = 'inline-block';
         
@@ -373,19 +322,16 @@ function configureSetupButtons() {
         .then(response => response.json())
         .then(data => {
             console.log(data.message);
-            // Inizia a controllare lo stato del setup
             checkSetupStatus();
         })
         .catch(error => {
             console.error('Errore nell\'avvio del setup:', error);
             document.getElementById('setup-status').textContent = 'Errore nell\'avvio del setup.';
-            // In caso di errore, ripristina i pulsanti
             startSetupBtn.style.display = 'inline-block';
             endSetupBtn.style.display = 'none';
         });
     });
 
-    // Modifica l'event listener per "Termina setup"
     endSetupBtn.addEventListener('click', function() {
         fetch('/end_setup', {
             method: 'POST'
@@ -394,7 +340,6 @@ function configureSetupButtons() {
         .then(data => {
             console.log(data.message);
             document.getElementById('setup-status').textContent = 'Setup terminato manualmente.';
-            // Nascondi il pulsante "Termina" e mostra "Avvia"
             startSetupBtn.style.display = 'inline-block';
             endSetupBtn.style.display = 'none';
             refreshStudentList();
@@ -406,7 +351,6 @@ function configureSetupButtons() {
     });
 }
 
-// Modifica la funzione che controlla lo stato del setup
 function checkSetupStatus() {
     fetch('/setup_status')
         .then(response => response.json())
@@ -416,23 +360,19 @@ function checkSetupStatus() {
             
             if (data.running) {
                 document.getElementById('setup-status').textContent = 'Setup in esecuzione...';
-                // Mostra solo il pulsante per terminare
                 startSetupBtn.style.display = 'none';
                 endSetupBtn.style.display = 'inline-block';
                 
-                // Controlla di nuovo dopo un intervallo
                 setTimeout(checkSetupStatus, 2000);
             } else {
                 if (data.complete) {
                     document.getElementById('setup-status').textContent = 'Setup completato con successo.';
                 } else {
-                    // Verifichiamo se ci sono container attivi per determinare quale pulsante mostrare
                     fetch('/status')
                         .then(response => response.json())
                         .then(containers => {
                             let anyContainerActive = false;
                             
-                            // Verifica se c'è almeno un container attivo
                             for (const studentName in containers) {
                                 if (containers[studentName] === "attivo") {
                                     anyContainerActive = true;
@@ -441,12 +381,10 @@ function checkSetupStatus() {
                             }
                             
                             if (anyContainerActive) {
-                                // Se ci sono container attivi, mostra il pulsante per terminare
                                 startSetupBtn.style.display = 'none';
                                 endSetupBtn.style.display = 'inline-block';
                                 document.getElementById('setup-status').textContent = 'Docker attivo. Puoi terminare il setup.';
                             } else {
-                                // Altrimenti mostra il pulsante per avviare
                                 startSetupBtn.style.display = 'inline-block';
                                 endSetupBtn.style.display = 'none';
                                 document.getElementById('setup-status').textContent = 'Docker non attivo. Puoi avviare il setup.';
@@ -464,7 +402,6 @@ function checkSetupStatus() {
         .catch(error => {
             console.error('Errore nel controllo dello stato del setup:', error);
             document.getElementById('setup-status').textContent = 'Errore nel controllo dello stato.';
-            // In caso di errore, mostriamo il pulsante di avvio per sicurezza
             document.getElementById('start-setup').style.display = 'inline-block';
             document.getElementById('end-setup').style.display = 'none';
         });

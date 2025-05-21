@@ -10,36 +10,24 @@ import create_compose
 
 app = Flask(__name__)
 
-STUDENT_DIR = "./projects"
-CONFIG_FILE = "config.json" 
-CREATE_SCRIPT = "create-compose.py"  # Il nome dello script principale
-DOCKER_CONTAINER_PREFIX = "progettofinale-"
-
-# Variabili globali
+with open("config.json", "r") as f:
+    config = json.load(f)
+    
 container_statuses = {}
 setup_running = False
 setup_complete = False
 
 @app.route("/")
 def index():
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            config = json.load(f)
-            has_config = True
-    except:
-        has_config = False
-
-    # Assicurati che i container siano aggiornati prima di renderizzare la pagina
     update_container_statuses()
-    
-    return render_template("index.html", has_config=has_config, 
+    return render_template("index.html", has_config=True, 
                           setup_running=setup_running, 
                           setup_complete=setup_complete,
                           container_statuses=container_statuses)
 
 @app.route("/files/<student>")
 def list_files(student):
-    student_dir = os.path.join(STUDENT_DIR, student)
+    student_dir = os.path.join(config["projects_folder_name"], student)
     if not os.path.isdir(student_dir):
         return jsonify({"error": "Studente non trovato"}), 404
     
@@ -60,7 +48,7 @@ def list_files(student):
 
 @app.route("/content/<student>/<path:filename>")
 def get_file_content(student, filename):
-    file_path = os.path.join(STUDENT_DIR, student, filename)
+    file_path = os.path.join(config["projects_folder_name"], student, filename)
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -72,7 +60,6 @@ def get_file_content(student, filename):
 def get_status():
     update_container_statuses()
     
-    # Crea un nuovo dizionario solo con chiavi lowercase per evitare duplicati
     normalized_statuses = {}
     for name, status in container_statuses.items():
         normalized_statuses[name.lower()] = status
@@ -89,7 +76,6 @@ def start_setup():
     setup_running = True
     setup_complete = False
     
-    # Avvia il processo in un thread separato
     thread = threading.Thread(target=run_setup)
     thread.daemon = True
     thread.start()
@@ -100,15 +86,8 @@ def start_setup():
 def end_setup():
     global setup_running, setup_complete
     
-    # Rimuoviamo questa condizione per permettere di terminare in qualsiasi momento
-    # if not setup_running:
-    #     return jsonify({"success": False, "message": "Nessun setup in esecuzione"}), 400
-    
     setup_running = False
     setup_complete = True
-    
-    # Qui puoi aggiungere un comando per terminare il setup se necessario
-    # Ad esempio: subprocess.run(["docker-compose", "down"])
     
     return jsonify({"success": True, "message": "Setup terminato manualmente"})
 
@@ -127,17 +106,15 @@ def run_setup():
     global setup_running, setup_complete, container_statuses
     
     try:
-        # Run create_compose.main() in a separate thread
         setup_thread = threading.Thread(target=create_compose.main)
         setup_thread.daemon = True
         setup_thread.start()
-        setup_thread.join()  # Wait for it to complete
+        setup_thread.join()
         setup_complete = True
     except Exception as e:
         print(f"Errore durante l'esecuzione dello script: {e}")
     finally:
         setup_running = False
-        # Aggiorna lo stato dei container
         update_container_statuses()
 
 def get_docker_containers():
@@ -154,17 +131,14 @@ def get_docker_containers():
                 parts = line.split(',', 1)
                 if len(parts) == 2:
                     name, status = parts
-                    if name.startswith(DOCKER_CONTAINER_PREFIX):
-                        username = name[len(DOCKER_CONTAINER_PREFIX):]
+                    if name.startswith(config["docker_container_prefix"]):
+                        username = name[len(config["docker_container_prefix"]):]
                         
-                        # Rimuovi il suffisso numerico se presente (es: -1, -2, ecc.)
                         if len(username) > 2 and username[-2] == '-' and username[-1].isdigit():
                             username = username[:-2]
                         
-                        # Converti tutto in lowercase per evitare duplicati dovuti a capitalizzazione
                         username = username.lower()
                         
-                        # Se abbiamo già un container con questo nome, dai priorità allo stato "up"
                         if username in containers:
                             if "up" not in containers[username].lower() and "up" in status.lower():
                                 containers[username] = status
@@ -178,39 +152,28 @@ def get_docker_containers():
 def update_container_statuses():
     global container_statuses
     
-    # Ottieni lo stato dei container Docker
     containers = get_docker_containers()
     
-    # Check students directories
     students = []
-    if os.path.exists(STUDENT_DIR):
-        students = [s for s in os.listdir(STUDENT_DIR) if os.path.isdir(os.path.join(STUDENT_DIR, s))]
+    if os.path.exists(config["projects_folder_name"]):
+        students = [s for s in os.listdir(config["projects_folder_name"]) if os.path.isdir(os.path.join(config["projects_folder_name"], s))]
     
-    # Crea un dizionario per tenere traccia dei nomi base e dei loro stati
     base_containers = {}
     
-    # Per ogni container, determina il nome base (senza suffissi come -1)
     for container_name, status in containers.items():
-        # Rimuovi suffissi come -1, -2, ecc.
         base_name = re.sub(r'-\d+$', '', container_name)
         
-        # Se c'è già un container con questo nome base, usa quello con lo stato "up" se disponibile
         if base_name in base_containers:
             existing_status = base_containers[base_name]
-            # Se il container esistente non è attivo ma questo sì, sostituiscilo
             if "up" not in existing_status.lower() and "up" in status.lower():
                 base_containers[base_name] = status
         else:
             base_containers[base_name] = status
     
-    # Aggiorna lo stato per ogni studente
     statuses = {}
     
-    # Aggiungi tutti gli studenti con directory
     for student in students:
         added = False
-        # Verifica se esiste un container con nome base che corrisponde a questo studente
-        # (case insensitive)
         for base_name in base_containers:
             if base_name.lower() == student.lower():
                 status = base_containers[base_name]
@@ -218,32 +181,25 @@ def update_container_statuses():
                 added = True
                 break
         
-        # Se non è stato trovato un container corrispondente
         if not added:
             statuses[student] = "inattivo"
     
-    # Aggiungi container che potrebbero non avere directory
     for base_name, status in base_containers.items():
-        # Verifica se questo container è già stato associato a uno studente
         if not any(student.lower() == base_name.lower() for student in students):
             statuses[base_name] = "attivo" if "up" in status.lower() else "inattivo"
     
     container_statuses = statuses
 
-# Avvia un thread per aggiornare periodicamente lo stato dei container
 def status_updater_thread():
     while True:
         update_container_statuses()
-        time.sleep(5)  # Aggiorna ogni 5 secondi
+        time.sleep(5)
 
 if __name__ == "__main__":
-    # Assicurati che la cartella projects esista
-    os.makedirs(STUDENT_DIR, exist_ok=True)
+    os.makedirs(config["projects_folder_name"], exist_ok=True)
     
-    # Avvia il thread di aggiornamento dello stato
     threading.Thread(target=status_updater_thread, daemon=True).start()
     
-    # Inizializza lo stato dei container all'avvio
     update_container_statuses()
     
     app.run(debug=True, host='0.0.0.0', port=5000)

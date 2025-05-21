@@ -13,20 +13,14 @@
   </header>
   
   <div class="main-container">
-    <!-- Pannello Studenti -->
     <div class="students">
       <div class="panel-header">
         <span>Studenti</span>
-        <button id="refresh-students" class="btn btn-primary">
-          <i class="fas fa-sync-alt"></i>
-        </button>
       </div>
       <ul class="student-list" id="student-list">
-        <!-- Lista studenti generata dinamicamente -->
         <li class="no-content">Caricamento studenti...</li>
       </ul>
       
-      <!-- Pannello Setup -->
       <div class="setup-panel">
         <div class="panel-header">Setup Ambiente</div>
         <div class="setup-actions">
@@ -39,18 +33,16 @@
       </div>
     </div>
     
-    <!-- Pannello File Explorer -->
     <div class="files">
       <div class="panel-header">
         <span>File Explorer: <span id="current-student">Nessuno studente selezionato</span></span>
       </div>
       <ul class="file-list" id="file-list">
-        <!-- File generati dinamicamente -->
         <li class="no-content">Seleziona uno studente per visualizzare i file</li>
       </ul>
     </div>
     
-    <!-- Pannello Contenuto File -->
+    <div class="file-content">
     <div class="file-content">
       <div class="content-header">
         <span id="current-file">Nessun file selezionato</span>
