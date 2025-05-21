@@ -89,7 +89,21 @@ def end_setup():
     setup_running = False
     setup_complete = True
     
+    thread = threading.Thread(target=stop_containers)
+    thread.daemon = True
+    thread.start()
+    
     return jsonify({"success": True, "message": "Setup terminato manualmente"})
+
+def stop_containers():
+    try:
+        print("Arresto dei container Docker in corso...")
+        subprocess.run(["docker-compose", "-f", config["docker-compose_path"], "down"], check=True)
+        print("Container Docker arrestati con successo")
+    except Exception as e:
+        print(f"Errore durante l'arresto dei container Docker: {e}")
+    finally:
+        update_container_statuses()
 
 @app.route("/setup_status")
 def setup_status():
