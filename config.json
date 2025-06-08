@@ -5,12 +5,12 @@
   "emergency_user": true,
   "admin_email": "francibgonza21@gmail.com",
 
-  "base_domain": "172.20.10.4",
+  "base_domain": "192.168.1.161",
   "base_port": 8080,
   
   "SEB_folder_name": "./SEBFiles",
   "projects_folder_name": "./projects",
   "Students.csv_path": "./Students.csv",
   "docker-compose_path": "./docker-compose.yaml",
-  "docker_container_prefix": "progettofinale-"
+  "docker_container_prefix": "m347-" 
 }

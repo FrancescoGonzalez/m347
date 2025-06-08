@@ -170,36 +170,26 @@ def update_container_statuses():
     
     students = []
     if os.path.exists(config["projects_folder_name"]):
-        students = [s for s in os.listdir(config["projects_folder_name"]) if os.path.isdir(os.path.join(config["projects_folder_name"], s))]
-    
-    base_containers = {}
-    
-    for container_name, status in containers.items():
-        base_name = re.sub(r'-\d+$', '', container_name)
-        
-        if base_name in base_containers:
-            existing_status = base_containers[base_name]
-            if "up" not in existing_status.lower() and "up" in status.lower():
-                base_containers[base_name] = status
-        else:
-            base_containers[base_name] = status
+        students = [s for s in os.listdir(config["projects_folder_name"]) 
+                   if os.path.isdir(os.path.join(config["projects_folder_name"], s))]
     
     statuses = {}
     
     for student in students:
-        added = False
-        for base_name in base_containers:
-            if base_name.lower() == student.lower():
-                status = base_containers[base_name]
-                statuses[student] = "attivo" if "up" in status.lower() else "inattivo"
-                added = True
+        statuses[student] = "inattivo"
+    
+    for container_name, status in containers.items():
+        base_name = re.sub(r'-\d+$', '', container_name)
+        
+        matching_student = None
+        for student in students:
+            if student.lower() == base_name.lower():
+                matching_student = student
                 break
         
-        if not added:
-            statuses[student] = "inattivo"
-    
-    for base_name, status in base_containers.items():
-        if not any(student.lower() == base_name.lower() for student in students):
+        if matching_student:
+            statuses[matching_student] = "attivo" if "up" in status.lower() else "inattivo"
+        else:
             statuses[base_name] = "attivo" if "up" in status.lower() else "inattivo"
     
     container_statuses = statuses
