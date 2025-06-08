@@ -92,7 +92,7 @@ def monitor_logs_and_shutdown():
                 container = match.group(1)
                 if container not in checked:
                     print(f"Disconnessione rilevata per {container}, arresto container...")
-                    subprocess.run(["docker", "stop", f"progettofinale-{container}"])
+                    subprocess.run(["docker", "stop", f"{config["docker_container_prefix"]}{container}"])
                     checked.add(container)
         proc.stdout.close()
         proc.wait()
