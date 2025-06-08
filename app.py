@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, jsonify, request
+from flask import Flask, render_template, send_from_directory, jsonify, request, send_file
 import os
 import json
 import subprocess
@@ -7,6 +7,8 @@ import time
 import re
 import shutil
 import create_compose
+import tempfile
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -24,6 +26,31 @@ def index():
                           setup_running=setup_running, 
                           setup_complete=setup_complete,
                           container_statuses=container_statuses)
+
+@app.route("/download_projects")
+def download_projects():
+    try:
+        
+        zip_filename = f"projects_test_{datetime.now().strftime("%Y-%m-%d")}"
+        zip_path = os.path.join(tempfile.mkdtemp(), zip_filename)
+        
+        if not os.path.exists(config["projects_folder_name"]):
+            return jsonify({"error": "Cartella projects non trovata"}), 404
+        
+        shutil.make_archive(zip_path, 'zip', config["projects_folder_name"])
+        
+        zip_file_path = f"{zip_path}.zip"
+        
+        return send_file(
+            zip_file_path,
+            as_attachment=True,
+            download_name=f"{zip_filename}.zip",
+            mimetype='application/zip'
+        )
+        
+    except Exception as e:
+        return jsonify({"error": f"Errore nella creazione dello zip: {str(e)}"}), 500
+
 
 @app.route("/files/<student>")
 def list_files(student):
