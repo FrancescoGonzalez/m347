@@ -99,10 +99,10 @@ def monitor_logs_and_shutdown():
         time.sleep(5)
 
 def main():
-    shutil.rmtree(config["SEB_folder_name"])
-    shutil.rmtree(config["projects_folder_name"])
-    os.makedirs(config["SEB_folder_name"], exist_ok=True)
-    os.makedirs(config["projects_folder_name"], exist_ok=True)
+    for directory in [config["SEB_folder_name"], config["projects_folder_name"]]:
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
+        os.makedirs(directory, exist_ok=True)
 
     students = []
 
